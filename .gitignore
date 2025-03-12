@@ -1,2 +1,4 @@
 #Ignore .Rdata
 .Rdata
+.Rhistory
+.DS_Store
