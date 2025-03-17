@@ -23,29 +23,21 @@ library(tidytext)
 
 # Alternative approach using base R to handle problematic characters
 empire_texts <- empire_texts %>%
+  rowwise() %>%
   mutate(
-    text_length = sapply(text, function(x) {
-#     # Try to handle encoding issues safely
-      clean_text <- tryCatch({
-      clean <- iconv(x, from = "UTF-8", to = "UTF-8", sub = "")
-      if(is.na(clean)) return(0)
-      return(nchar(clean))
-    }, error = function(e) {
-      return(0)  # Return 0 for length if all else fails
-    })
-     return(clean_text)
-   })
- )
+    text_length = tryCatch({
+      clean <- iconv(text, from = "UTF-8", to = "UTF-8", sub = "")
+      if(is.na(clean)) 0 else nchar(clean)
+    }, error = function(e) 0)
+  ) %>%
+  ungroup()
 
 regions <- c("India", "Africa", "Australia", "Canada", "Caribbean", "Egypt")
 
 
 # calculates the proportional regional focus for texts in the corpus
-# important to mutate sub out invalid utf-8, or else subsequent code will fail
 regional_focus <- empire_texts %>%
-  mutate(text = iconv(text, to = "UTF-8", sub = "")) %>%  # Clean at the start
-  filter(gutenberg_id != 1470, gutenberg_id != 3310, gutenberg_id != 6134, 
-         gutenberg_id != 6329, gutenberg_id != 6358, gutenberg_id != 6469) %>%
+  mutate(text = iconv(empire_texts$text, to = "UTF-8", sub = " ")) %>%  # Clean at the start
   group_by(gutenberg_id, title) %>%
   summarize(text = paste(text, collapse = " ")) %>%
   mutate(
@@ -63,8 +55,8 @@ regional_focus <- empire_texts %>%
     australia_ratio = australia_focus / text_length * 10000,
     caribbean_ratio = caribbean_focus / text_length * 10000,
     egypt_ratio = egypt_focus / text_length * 10000,
-    canada_ratio = canada_focus / text_length * 10000
-  a_ratio = canada_focus / text_length * 10000)
+    canada_ratio = canada_focus / text_length * 10000,
+    a_ratio = canada_focus / text_length * 10000)
   
 
 # Let's start putting a map together with a focus on different regions 
@@ -121,14 +113,11 @@ ggplot() +
   coord_fixed(1.3) +  # Keeps map proportions reasonable
   theme(legend.position = "bottom")
 
-# This is a bit easier because you don't have to supply the coordinates 
-# but we do need to normalize the values in the focus strength field, so we'll
-# add those values to regional_summary 
+# Here's a different kind of map with shading depending on "narrative
+# intensity" 
 
-# Assuming world_subset is prepared as in previous examples
-# If not, here's a quick setup (replace with your actual data prep):
 world <- map_data("world")
-# Example map_data from earlier
+
 region_coords <- data.frame(
   region = c("India", "Africa", "Australia", "Caribbean", "Egypt", "Canada"),
   lon = c(78.9629, 21.0936, 133.7751, -76.8099, 31.2357, -106.3468),
@@ -186,4 +175,5 @@ ggplot() +
     subtitle = "Heatmap of narrative intensity across colonial regions"
   ) +
   coord_fixed(1.3)
+
 
