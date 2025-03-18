@@ -20,7 +20,7 @@ word_freq <- empire_texts %>%
   count(word, sort = TRUE) %>%
   top_n(10, n)
 
-# Create bar plot
+# Create bar graph
 ggplot(word_freq, aes(x = reorder(word, n), y = n)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   coord_flip() +
