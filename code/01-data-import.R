@@ -83,8 +83,8 @@ if(nrow(empire_works) > 1000) {
 
 # Download the corpus (this will take time)
 # Uncomment the two lines below when ready to download
-# empire_texts <- gutenberg_download(empire_works$gutenberg_id, 
-                                 # meta_fields = c("title", "author"))
+empire_texts <- gutenberg_download(empire_works$gutenberg_id, 
+                                  meta_fields = c("title", "author"))
 
 # Take a quick look at the dataset to get a sense of how it's organized  
 View(empire_texts) 
