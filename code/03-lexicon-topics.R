@@ -45,6 +45,20 @@ bigram_freq <- empire_texts %>%
   count(bigram, sort = TRUE) %>%
   top_n(10, n)
 
+# If you want to filter for a specific word in one part of the bigram
+# Modified bigram analysis where word2 must be "land"
+bigram_freq <- empire_texts %>%
+  filter(author == "Haggard, H. Rider (Henry Rider)") %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  filter(!is.na(bigram)) %>%
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>%
+  # Filter for bigrams where word2 is "land"
+  filter(word2 == "land") %>%
+  filter(!word1 %in% stop_words$word) %>%
+  unite(bigram, word1, word2, sep = " ") %>%
+  count(bigram, sort = TRUE) %>%
+  top_n(10, n)
+
 # Create bar plot
 ggplot(bigram_freq, aes(x = reorder(bigram, n), y = n)) +
   geom_bar(stat = "identity", fill = "darkorange") +
