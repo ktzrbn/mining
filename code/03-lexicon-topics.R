@@ -4,6 +4,7 @@ library(tidytext)
 library(ggplot2)
 library(stringr)
 library(textdata)
+library(tidyr)
 
 # Some basic text mining features
 
@@ -27,48 +28,44 @@ ggplot(word_freq, aes(x = reorder(word, n), y = n)) +
        x = "Words", y = "Frequency") +
   theme_minimal()
 
-# Sentiment analysis over titles 
-# Sample the dataset to 5 unique titles for efficiency (adjust as needed)
-set.seed(123)  # For reproducibility
-sample_titles <- gutenberg_data %>%
-  distinct(title) %>%
-  slice_sample(n = 5) %>%
-  pull(title)
-
-# Filter dataset to sampled titles, tokenize, and join with AFINN sentiment lexicon
-sentiment_data <- empire_texts %>%
-  slice(1:100) %>%  # Take first 100 rows
-  unnest_tokens(word, text) %>%
-  inner_join(get_sentiments("afinn"), by = "word") %>%
-  group_by(title) %>%
-  summarise(avg_sentiment = mean(value, na.rm = TRUE)) %>%
-  ungroup()
+# Second analysis 
+# Filter for a specific author and tokenize into bigrams
+bigram_freq <- empire_texts %>%
+  filter(author == "Haggard, H. Rider (Henry Rider)") %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  # Remove rows with NA bigrams
+  filter(!is.na(bigram)) %>%
+  # Separate bigrams into two words to filter stop words
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word,
+         !word2 %in% stop_words$word) %>%
+  # Recombine into bigrams and clean
+  unite(bigram, word1, word2, sep = " ") %>%
+  # Count bigram frequencies
+  count(bigram, sort = TRUE) %>%
+  top_n(10, n)
 
 # Create bar plot
-ggplot(sentiment_data, aes(x = reorder(title, avg_sentiment), y = avg_sentiment, fill = avg_sentiment > 0)) +
-  geom_bar(stat = "identity") +
+ggplot(bigram_freq, aes(x = reorder(bigram, n), y = n)) +
+  geom_bar(stat = "identity", fill = "darkorange") +
   coord_flip() +
-  labs(title = "Average Sentiment Score by Title",
-       x = "Title", y = "Average Sentiment (AFINN)") +
-  scale_fill_manual(values = c("red", "green"), guide = FALSE) +
+  labs(title = "Top 10 Bigrams by H. Rider Haggard",
+       x = "Bigrams", y = "Frequency") +
   theme_minimal() +
   theme(axis.text.y = element_text(size = 8))
 
-# Load required packages
-library(dplyr)
-library(tidytext)
-library(ggplot2)
-
-# third analysis 
+# Third analysis
+# This analysis selects 4 texts at random and shows their top five distinctive words
 # Sample 4 titles for analysis (adjust as needed)
-set.seed(123)
-sample_titles <- gutenberg_data %>%
+# Changing the set.seed number will change the random titles generated
+set.seed(279)
+sample_titles <- empire_texts %>%
   distinct(title) %>%
   slice_sample(n = 4) %>%
   pull(title)
 
 # Filter, tokenize, and calculate TF-IDF
-tfidf_data <- gutenberg_data %>%
+tfidf_data <- empire_texts %>%
   filter(title %in% sample_titles) %>%
   unnest_tokens(word, text) %>%
   anti_join(stop_words, by = "word") %>%
